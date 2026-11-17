@@ -1,0 +1,45 @@
+[package]
+name = "nano-edge"
+version = "0.1.0"
+edition = "2021"
+description = "A small CDN edge reverse proxy in Rust: RFC 9111 cache, request collapsing, P2C/consistent-hash load balancing, SNI TLS, rate limiting"
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "nano-edge"
+path = "src/main.rs"
+
+[[bin]]
+name = "origin"
+path = "src/bin/origin.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+hyper = { version = "1", features = ["http1", "http2", "server", "client"] }
+hyper-util = { version = "0.1", features = ["tokio", "server-auto", "client-legacy", "http1", "http2"] }
+http-body-util = "0.1"
+bytes = "1"
+http = "1"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12", "logging"] }
+rustls-pemfile = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+regex = "1"
+percent-encoding = "2"
+lru = "0.12"
+rand = "0.8"
+httpdate = "1"
+
+[dev-dependencies]
+rcgen = "0.13"
+
+[profile.release]
+debug = 1
+codegen-units = 1
+lto = "thin"

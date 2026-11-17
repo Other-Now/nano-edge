@@ -1,0 +1,2 @@
+cache-tests-nano-edge.json {"required":{"pass":156,"fail":1,"other":3},"check":{"pass":49,"fail":47,"other":5},"optimal":{"pass":76,"fail":26,"other":3}}
+cache-tests-nginx.json {"required":{"pass":115,"fail":39,"other":6},"check":{"pass":22,"fail":73,"other":6},"optimal":{"pass":66,"fail":34,"other":5}}

@@ -1,0 +1,32 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: "clippy, rustfmt" }
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  conformance:
+    # HTTP cache conformance suite (cache-tests.fyi) against nano-edge and nginx.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: sudo apt-get update && sudo apt-get install -y nginx-light || sudo apt-get install -y nginx
+      - run: cargo build --release
+      - run: |
+          git clone --depth 1 https://github.com/http-tests/cache-tests.git ../cache-tests
+          (cd ../cache-tests && npm install --no-audit --no-fund)
+      - run: CT=$PWD/../cache-tests NGX=/usr/sbin/nginx CARGO_TARGET_DIR=$PWD/target bash bench/cache-tests.sh
+      - uses: actions/upload-artifact@v4
+        with: { name: cache-tests, path: results/cache-tests-* }

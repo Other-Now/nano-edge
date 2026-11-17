@@ -1,0 +1,31 @@
+# Example nano-edge configuration. Every key is optional; defaults in src/config.rs.
+listen = "0.0.0.0:8080"
+admin_listen = "127.0.0.1:9100"   # /metrics, /healthz
+# tls_listen = "0.0.0.0:8443"
+# tls_cert_dir = "certs"          # <sni-name>.crt/.key, _wildcard.<domain>.crt, default.crt
+workers = 0                       # 0 = one per core
+waf = true
+access_log = false
+
+[upstream]
+servers = ["127.0.0.1:9001", "127.0.0.1:9002", "127.0.0.1:9003"]
+policy = "p2c"                    # round_robin | p2c | consistent_hash
+health_path = "/health"
+health_interval_ms = 1000
+eject_after_failures = 3
+eject_ms = 10000
+timeout_ms = 10000
+
+[cache]
+enabled = true
+max_bytes = 268435456
+max_object_bytes = 8388608
+collapse = true
+collapse_timeout_ms = 5000
+
+[limits]
+rate_per_sec = 0.0                # per client IP; 0 = off
+burst = 0.0
+max_connections = 50000
+max_connections_per_ip = 0        # 0 = off
+header_read_timeout_ms = 5000     # slowloris defence

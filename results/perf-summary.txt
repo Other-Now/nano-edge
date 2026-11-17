@@ -1,0 +1,47 @@
+# nano-edge vs nginx 1.24.0 (Ubuntu) — 2026-11-17 — Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz, 4 vCPU (WSL2)
+# proxies pinned to CPU 0-1 (2 workers); origins + oha on CPU 2-3; duration 10s
+
+## cache hit, 1 KiB, 64 connections, closed loop (3 reps)
+nano-edge  rep1     81925 rps  p50   0.719 ms  p99   2.052 ms  p99.9   7.895 ms  non2xx 0  errors 64
+nginx      rep1     48889 rps  p50   1.108 ms  p99   4.061 ms  p99.9   7.724 ms  non2xx 0  errors 64
+nano-edge  rep2     83215 rps  p50   0.734 ms  p99   1.792 ms  p99.9   3.521 ms  non2xx 0  errors 62
+nginx      rep2     56002 rps  p50   1.022 ms  p99   2.381 ms  p99.9   5.635 ms  non2xx 0  errors 62
+nano-edge  rep3     88814 rps  p50   0.701 ms  p99   1.663 ms  p99.9   2.913 ms  non2xx 0  errors 62
+nginx      rep3     50662 rps  p50   1.099 ms  p99   3.131 ms  p99.9   5.610 ms  non2xx 0  errors 59
+nano-edge (waf off)      74395 rps  p50   0.765 ms  p99   2.856 ms  p99.9   7.173 ms  non2xx 0  errors 59
+
+## pass-through (no-store), 1 KiB, 64 connections, closed loop (3 reps)
+nano-edge             rep1     22360 rps  p50   2.381 ms  p99  10.571 ms  p99.9  16.952 ms  non2xx 0  errors 62
+nginx cache_lock=off  rep1     34162 rps  p50   1.633 ms  p99   5.593 ms  p99.9  14.641 ms  non2xx 0  errors 64
+nano-edge             rep2     32031 rps  p50   1.829 ms  p99   4.474 ms  p99.9   6.317 ms  non2xx 0  errors 53
+nginx cache_lock=off  rep2     40943 rps  p50   1.414 ms  p99   4.630 ms  p99.9   9.326 ms  non2xx 0  errors 58
+nano-edge             rep3     23819 rps  p50   2.126 ms  p99  11.883 ms  p99.9  28.843 ms  non2xx 0  errors 58
+nginx cache_lock=off  rep3     37183 rps  p50   1.504 ms  p99   6.053 ms  p99.9  12.878 ms  non2xx 0  errors 62
+nano-edge hit_for_pass=off      31010 rps  p50   1.910 ms  p99   4.643 ms  p99.9   6.906 ms  non2xx 0  errors 63
+nginx cache_lock=on              4728 rps  p50   0.197 ms  p99   0.340 ms  p99.9 5003.286 ms  non2xx 0  errors 64
+
+## open loop, cache hit, latency-corrected
+nano-edge  5000/s      4999 rps  p50   0.447 ms  p99   0.808 ms  p99.9   1.499 ms  non2xx 0  errors 1
+nginx      5000/s      4999 rps  p50   0.423 ms  p99   0.791 ms  p99.9   1.522 ms  non2xx 0  errors 0
+nano-edge  20000/s     19996 rps  p50   0.519 ms  p99   1.683 ms  p99.9   3.238 ms  non2xx 0  errors 3
+nginx      20000/s     19995 rps  p50   0.509 ms  p99   3.554 ms  p99.9   8.070 ms  non2xx 0  errors 0
+
+## stampede: 1000 concurrent requests, cold key, origin delay 200 ms
+nano-edge collapse=true   origin fetches 1        3701 rps  p50 242.730 ms  p99 263.416 ms  p99.9 263.807 ms  non2xx 0  errors 0
+nano-edge collapse=false   origin fetches 1000        2880 rps  p50 300.241 ms  p99 321.032 ms  p99.9 322.029 ms  non2xx 0  errors 0
+nginx proxy_cache_lock=on origin fetches 1        1809 rps  p50 525.973 ms  p99 536.761 ms  p99.9 537.236 ms  non2xx 0  errors 0
+nginx proxy_cache_lock=off origin fetches 1000        2358 rps  p50 327.012 ms  p99 391.239 ms  p99.9 399.539 ms  non2xx 0  errors 0
+
+## slow origin: 9003 delayed 50 ms, pass-through at 2000 req/s, latency-corrected
+nano-edge round_robin  share to slow origin 6666/19999        1999 rps  p50   0.406 ms  p99  52.376 ms  p99.9  52.833 ms  non2xx 0  errors 34
+nano-edge p2c  share to slow origin 459/19999        2000 rps  p50   0.411 ms  p99  51.765 ms  p99.9  80.747 ms  non2xx 0  errors 7
+nginx round_robin  share to slow origin 6666/19999        1999 rps  p50   0.416 ms  p99  52.470 ms  p99.9  52.906 ms  non2xx 0  errors 33
+nginx least_conn;  share to slow origin 488/19997        2000 rps  p50   0.394 ms  p99  51.719 ms  p99.9  52.650 ms  non2xx 0  errors 2
+
+## origin killed (SIGKILL 9002) 3 s into a 10 s pass-through run at 2000 req/s
+edge       2000 rps  p50   0.399 ms  p99   1.282 ms  p99.9   1.921 ms  non2xx 0  errors 2  ejections 1
+nginx       2000 rps  p50   0.394 ms  p99   1.110 ms  p99.9   2.848 ms  non2xx 0  errors 3  
+
+## memory per idle keep-alive connection (5000 connections, one request each)
+edge  RSS 7.8 MiB -> 80.6 MiB with 5000/5000 connections open: 14.91 KiB per connection
+nginx  RSS 20.1 MiB -> 23.2 MiB with 5000/5000 connections open: 0.64 KiB per connection
