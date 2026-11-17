@@ -13,7 +13,7 @@ BIN=${CARGO_TARGET_DIR:-$HOME/ne-target}/release/nano-edge
 cleanup() { kill $SRV $EDGE 2>/dev/null; $NGX -p $RUN -c $RUN/nginx.conf -s stop 2>/dev/null; }
 trap cleanup EXIT
 
-(cd $CT && exec npm run --silent server) > $RUN/server.log 2>&1 & SRV=$!
+(cd $CT && npm_config_protocol=http npm_config_port=8000 npm_config_pidfile=$RUN/server.pid   exec node test-engine/server/server.mjs) > $RUN/server.log 2>&1 & SRV=$!
 
 cat > $RUN/edge.toml <<TOML
 listen = "127.0.0.1:8001"
@@ -39,7 +39,7 @@ http {
   server {
     listen 127.0.0.1:8002;
     location / {
-      proxy_pass http://localhost:8000;
+      proxy_pass http://127.0.0.1:8000;
       proxy_cache my-cache;
       proxy_cache_revalidate on;
       proxy_http_version 1.1;
@@ -48,11 +48,13 @@ http {
 }
 NGINX
 $NGX -p $RUN -c $RUN/nginx.conf
-sleep 2
+for i in $(seq 50); do curl -sf -o /dev/null http://127.0.0.1:8000/ -X GET -w '' 2>/dev/null; [ $? -ne 7 ] && break; sleep 0.2; done
+sleep 1
 
 cd $CT
-npm run --silent cli --base=http://127.0.0.1:8001 > $ROOT/results/cache-tests-nano-edge.json 2> $RUN/cli-edge.err
-npm run --silent cli --base=http://127.0.0.1:8002 > $ROOT/results/cache-tests-nginx.json 2> $RUN/cli-nginx.err
+cli() { npm_config_base=$1 npm_config_id= npm_package_config_id= node --no-warnings test-engine/cli.mjs; }
+cli http://127.0.0.1:8001 > $ROOT/results/cache-tests-nano-edge.json 2> $RUN/cli-edge.err
+cli http://127.0.0.1:8002 > $ROOT/results/cache-tests-nginx.json 2> $RUN/cli-nginx.err
 for f in nano-edge nginx; do
   if [ ! -s $ROOT/results/cache-tests-$f.json ]; then
     echo "== empty result for $f; logs:"; tail -n 20 $RUN/*.log $RUN/*.err $RUN/logs/* 2>/dev/null; exit 1
