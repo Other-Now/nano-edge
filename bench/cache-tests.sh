@@ -53,8 +53,8 @@ sleep 1
 
 cd $CT
 cli() { npm_config_base=$1 npm_config_id= npm_package_config_id= node --no-warnings test-engine/cli.mjs; }
-cli http://127.0.0.1:8001 > $ROOT/results/cache-tests-nano-edge.json 2> $RUN/cli-edge.err
-cli http://127.0.0.1:8002 > $ROOT/results/cache-tests-nginx.json 2> $RUN/cli-nginx.err
+cli http://127.0.0.1:8001 > $ROOT/results/cache-tests-nano-edge.json 2> $RUN/cli-edge.err; echo "cli nano-edge exit=$?"
+cli http://127.0.0.1:8002 > $ROOT/results/cache-tests-nginx.json 2> $RUN/cli-nginx.err; echo "cli nginx exit=$?"
 for f in nano-edge nginx; do
   if [ ! -s $ROOT/results/cache-tests-$f.json ]; then
     echo "== empty result for $f; logs:"; tail -n 20 $RUN/*.log $RUN/*.err $RUN/logs/* 2>/dev/null; exit 1
