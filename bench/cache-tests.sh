@@ -53,4 +53,9 @@ sleep 2
 cd $CT
 npm run --silent cli --base=http://127.0.0.1:8001 > $ROOT/results/cache-tests-nano-edge.json 2> $RUN/cli-edge.err
 npm run --silent cli --base=http://127.0.0.1:8002 > $ROOT/results/cache-tests-nginx.json 2> $RUN/cli-nginx.err
+for f in nano-edge nginx; do
+  if [ ! -s $ROOT/results/cache-tests-$f.json ]; then
+    echo "== empty result for $f; logs:"; tail -n 20 $RUN/*.log $RUN/*.err $RUN/logs/* 2>/dev/null; exit 1
+  fi
+done
 node --input-type=module -e "$(cat $ROOT/bench/ct-summary.mjs)" $CT $ROOT/results/cache-tests-nano-edge.json $ROOT/results/cache-tests-nginx.json | tee $ROOT/results/cache-tests-summary.txt
