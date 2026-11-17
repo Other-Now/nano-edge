@@ -40,7 +40,9 @@ The two proxies are pinned to the same 2 CPUs with 2 workers each. The origins a
 | **nano-edge** | **156** | 76 | 49 |
 | NGINX 1.24 (the suite's own nginx config) | 115 | 66 | 22 |
 
-My local NGINX run gives the same 115 as the suite's published nginx result, which confirms the setup.
+On CI (same Node version), nano-edge scored 155. The one difference is
+`304-etag-update-response-Content-Length`, where the suite's own test server answered setup with 409. That is harness
+flakiness, since nano-edge never generates a 409. My local NGINX run gives the same 115 as the suite's published nginx result, which confirms the setup.
 For context, the suite's published results for Varnish, Squid and ATS score 138.
 Of nano-edge's 4 misses, 2 need Range/206 support (not implemented),
 1 is `age-parse-suffix` (it conflicts with the sibling tests that say to ignore an invalid Age), and
